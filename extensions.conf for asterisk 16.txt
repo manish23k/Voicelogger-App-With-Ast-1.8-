@@ -1,0 +1,110 @@
+
+[general]
+static=yes
+writeprotect=no
+clearglobalvars=no
+autofallthrough=yes
+[globals]
+CONSOLE=Console/dsp
+TRUNKPSTN=SIP/SERVER
+TRUNKPBX=SIP/MATRIX
+
+
+;[tata]
+;exten => _X.,1,Goto(s,1)
+
+
+;exten => s,1,Noop(Let us look deeper into the soul of the invite)
+;exten => s,n,Set(pseudodid=${SIP_HEADER(To)})
+;exten => s,n,Set(pseudodid=${CUT(pseudodid,@,1)})
+;exten => s,n,Set(pseudodid=${CUT(pseudodid,:,2)})
+;exten => s,n,Goto(from-pstn,${pseudodid},1)
+
+
+[from-pstn]
+exten => s,1,NoOP
+
+
+
+
+
+exten => _X.,1,Noop(pstn)
+;exten => _X.,n,Answer()
+;exten => _X.,n,Playback(rec_line)
+exten => _X.,n,StopMixMonitor()
+exten => _X.,n,Set(TYPE="incoming")
+exten => _X.,n,Set(FILENAME="${STRFTIME(${EPOCH},,%Y)}/${STRFTIME(${EPOCH},,%m)}/${STRFTIME(${EPOCH},,%d)}/PSTN-${EXTEN}-${CALLERID(num)}-${STRFTIME(${EPOCH},,%Y%m%d-%H%M%S)}-${UNIQUEID}.wav")
+exten => _X.,n,Set(EXTENSIONS="${EXTEN}")
+exten => _X.,n,Set(PHONENUMBER="${CALLERID(num)}")
+exten => _X.,n,AGI(AGInorecord.php,${EXTENSIONS})
+exten => _X.,n,GotoIF($["${CALLEXTOUT}" = ""]?record_in:direct_in)
+exten => _X.,n(record_in),MixMonitor(/var/www/recordings/files/${FILENAME},b)
+exten => _X.,n,AGI(AGIcalldetail.php,${EXTENSIONS},${PHONENUMBER},${STRFTIME(${EPOCH},,%Y-%m-%d %H:%M:%S)},${TYPE},${FILENAME},1)
+exten => _X.,n,AGI(AGIlanding.php,${PHONENUMBER})
+exten => _X.,n(direct_in),AGI(AGIlanding.php,${PHONENUMBER})
+exten => _X.,n,GotoIF($["${CALLEXT}" = ""]?operator:landing)
+exten => _X.,n(landing),Dial(${TRUNKPBX}/${CALLEXT},60,rntT)
+exten => _X.,n(operator),Dial(${TRUNKPBX}/${EXTEN},60,rntT)
+exten => _X.,n,GotoIF($["${DIALSTATUS}" = "BUSY"]?busytone:h,1)
+exten => _X.,n(busytone),Playtone(busy)
+; exten => _+X.,n,Dial(${TRUNKPBX}/${EXTEN},60,rntT)
+;exten => _+X.,n,Hangup()
+
+
+
+exten => h,1,Noop(----${CALLERID(num)}-----${STRFTIME(${EPOCH},,%Y-%m-%d %H:%M:%S)}--${CHANNEL} )
+exten => h,n,AGI(AGIhangup.php,${EXTENSIONS},${PHONENUMBER},${FILENAME},${STRFTIME(${EPOCH},,%Y-%m-%d %H:%M:%S)})
+exten => h,n,hangup()
+
+[from-pbx]
+exten => s,1,NoOP('from-pbx - s')
+exten => s,n,Answer()
+exten => s,n,WaitExten(300)
+
+
+exten => _X.,1,Set(TYPE="outgoing")
+exten => _X.,n,Set(FILENAME="${STRFTIME(${EPOCH},,%Y)}/${STRFTIME(${EPOCH},,%m)}/${STRFTIME(${EPOCH},,%d)}/PBX-${EXTEN}-${CALLERID(num)}-${STRFTIME(${EPOCH},,%Y%m%d-%H%M%S)}-${UNIQUEID}.wav")
+exten => _X.,n,Set(PHONENUMBER="${EXTEN}")
+exten => _X.,n,Set(EXTENSIONS="${CALLERID(num)}")
+exten => _X.,n,AGI(AGInorecord.php,${EXTENSIONS})
+exten => _X.,n,GotoIF($["${CALLEXTOUT}" = ""]?record_out:direct_out)
+exten => _X.,n(record_out),MixMonitor(/var/www/recordings/files/${FILENAME},b)
+exten => _X.,n,AGI(AGIcalldetail.php,${PHONENUMBER},${EXTENSIONS},${STRFTIME(${EPOCH},,%Y-%m-%d %H:%M:%S)},${TYPE},${FILENAME},1)
+exten => _X.,n,Progress()
+exten => _X.,n,Dial(${TRUNKPSTN}/${PHONENUMBER},60,tToA)
+exten => _X.,n(direct_out),Dial(${TRUNKPSTN}/${PHONENUMBER},60,tTo)
+exten => _X.,n,Hangup()
+
+exten => _X.,1,Set(TYPE="outgoing")
+exten => _X.,n,Set(FILENAME="${STRFTIME(${EPOCH},,%Y)}/${STRFTIME(${EPOCH},,%m)}/${STRFTIME(${EPOCH},,%d)}/PBX-${EXTEN}-${CALLERID(num)}-${STRFTIME(${EPOCH},,%Y%m%d-%H%M%S)}-${UNIQUEID}.wav")
+exten => _X.,n,Set(EXTENSIONS="${EXTEN}")
+exten => _X.,n,Set(PHONENUMBER="${CALLERID(num)}")
+exten => _X.,n,AGI(AGInorecord.php,${PHONENUMBER})
+exten => _X.,n,GotoIF($["${CALLEXTOUT}" = ""]?record_out:direct_out)
+exten => _X.,n(record_out),MixMonitor(/var/www/recordings/files/${FILENAME},b)
+exten => _X.,n,AGI(AGIcalldetail.php,${PHONENUMBER},${EXTENSIONS},${STRFTIME(${EPOCH},,%Y-%m-%d %H:%M:%S)},${TYPE},${FILENAME})
+exten => _X.,n,Dial(${TRUNKPBX}/${EXTEN},60,TtoA)
+exten => _X.,n(direct_out),Dial(${TRUNKPBX}/${EXTEN},60,TtA)
+exten => _X.,n,Hangup()
+
+
+;exten => _1XX,1,Set(type="outgoing")
+;exten => _1XX.,n,Set(filename="${STRFTIME(${EPOCH},,%Y)}/${STRFTIME(${EPOCH},,%m)}/${STRFTIME(${EPOCH},,%d)}/PBX-${EXTEN}-${CALLERID(num)}-${STRFTIME(${EPOCH},,%Y%m%d-%H%M%S)}-${UNIQUEID}.wav")
+;exten => _1XX,n,Set(extensions="${CALLERID(num)}")
+;exten => _1XX,n,Set(phonenumber="${EXTEN}")
+;exten => _1XX,n,AGI(AGInorecord.php,${PHONENUMBER})
+;exten => _1XX,n,GotoIF($["${CALLEXTOUT}" = ""]?record_out:direct_out)
+;exten => _1XX,n(record_out),MixMonitor(/var/www/recordings/files/${FILENAME},b)
+;exten => _1XX,n,AGI(AGIcalldetail.php,${PHONENUMBER},${EXTENSIONS},${STRFTIME(${EPOCH},,%Y-%m-%d %H:%M:%S)},${TYPE},${FILENAME})
+;exten => _1XX,n,Dial(${TRUNKPBX1}/${EXTEN},60,TtoA)
+;exten => _1XX,n(direct_out),Dial(${TRUNKPBX1}/${EXTEN},60,TtA)
+;exten => _1XX,n,Hangup()
+
+
+exten => h,1,Noop(----${CALLERID(num)}-----${STRFTIME(${EPOCH},,%Y-%m-%d %H:%M:%S)}--${CHANNEL} )
+exten => h,n,AGI(AGIhangup.php,${EXTENSIONS},${PHONENUMBER},${FILENAME},${STRFTIME(${EPOCH},,%Y-%m-%d %H:%M:%S)})
+exten => h,n,hangup()
+
+
+
+
