@@ -132,3 +132,15 @@ sql_mode="NO_ENGINE_SUBSTITUTION"
 #
 
 !includedir /etc/my.cnf.d
+
+
+
+#### ADD CRON ACCESS TO VOICECATCH
+
+GRANT SELECT,CREATE,ALTER,INSERT,UPDATE,DELETE,LOCK TABLES on voicecatch.* TO cron@'%' IDENTIFIED BY '1234';
+GRANT SELECT,CREATE,ALTER,INSERT,UPDATE,DELETE,LOCK TABLES on voicecatch.* TO cron@localhost IDENTIFIED BY '1234';
+GRANT RELOAD ON *.* TO cron@'%';
+GRANT RELOAD ON *.* TO cron@localhost;
+flush privileges;
+
+SET GLOBAL connect_timeout=60;
