@@ -103,7 +103,16 @@
 0 */6 * * * /usr/bin/VB-firewall --voipbl --noblack --quiet
 
 
+####JIO ROUTES
+@reboot /sbin/route add 100.64.216.4 gw 100.64.87.81 dev enp1s0
+@reboot /sbin/route add 100.64.216.5 gw 100.64.87.81 dev enp1s0
+@reboot /sbin/route add 100.64.216.6 gw 100.64.87.81 dev enp1s0
+@reboot /sbin/route add 100.64.0.0 gw 100.64.87.81 dev enp1s0
+
+
+
+#Process miss and NA calls
+* * * * * /usr/bin/curl -k https://192.168.1.72/test.php
 
 ### Delete Recordings of 1KB for VC application
-
 * * * * * /usr/bin/find /var/www/recordings/files/ -size 1 -delete
